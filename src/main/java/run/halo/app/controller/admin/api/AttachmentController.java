@@ -1,26 +1,31 @@
 package run.halo.app.controller.admin.api;
 
+import static org.springframework.data.domain.Sort.Direction.DESC;
+
 import io.swagger.annotations.ApiOperation;
+import java.util.LinkedList;
+import java.util.List;
+import javax.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import run.halo.app.model.dto.AttachmentDTO;
 import run.halo.app.model.entity.Attachment;
 import run.halo.app.model.enums.AttachmentType;
 import run.halo.app.model.params.AttachmentParam;
 import run.halo.app.model.params.AttachmentQuery;
-import run.halo.app.service.AttachmentHandlerCovertService;
 import run.halo.app.service.AttachmentService;
-
-import javax.validation.Valid;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.Future;
-
-import static org.springframework.data.domain.Sort.Direction.DESC;
 
 /**
  * Attachment controller.
@@ -33,19 +38,15 @@ import static org.springframework.data.domain.Sort.Direction.DESC;
 public class AttachmentController {
 
     private final AttachmentService attachmentService;
-    private final AttachmentHandlerCovertService attachmentHandlerCovertService;
 
-    public AttachmentController(
-            AttachmentService attachmentService,
-            AttachmentHandlerCovertService attachmentHandlerCovertService) {
+    public AttachmentController(AttachmentService attachmentService) {
         this.attachmentService = attachmentService;
-        this.attachmentHandlerCovertService = attachmentHandlerCovertService;
     }
 
     @GetMapping
     public Page<AttachmentDTO> pageBy(
-            @PageableDefault(sort = "createTime", direction = DESC) Pageable pageable,
-            AttachmentQuery attachmentQuery) {
+        @PageableDefault(sort = "createTime", direction = DESC) Pageable pageable,
+        AttachmentQuery attachmentQuery) {
         return attachmentService.pageDtosBy(pageable, attachmentQuery);
     }
 
@@ -58,9 +59,8 @@ public class AttachmentController {
 
     @PutMapping("{attachmentId:\\d+}")
     @ApiOperation("Updates a attachment")
-    public AttachmentDTO updateBy(
-            @PathVariable("attachmentId") Integer attachmentId,
-            @RequestBody @Valid AttachmentParam attachmentParam) {
+    public AttachmentDTO updateBy(@PathVariable("attachmentId") Integer attachmentId,
+        @RequestBody @Valid AttachmentParam attachmentParam) {
         Attachment attachment = attachmentService.getById(attachmentId);
         attachmentParam.update(attachment);
         return new AttachmentDTO().convertFrom(attachmentService.update(attachment));
@@ -109,19 +109,5 @@ public class AttachmentController {
     @ApiOperation("Lists all of types.")
     public List<AttachmentType> listTypes() {
         return attachmentService.listAllType();
-    }
-
-    @PutMapping("covert_attachment_handler")
-    @ApiOperation("Covert all attachments to current Handler.")
-    public Future<String> covertAttachmentHandler(
-            @RequestParam(name = "sourceAttachmentType", required = false, defaultValue = "LOCAL") AttachmentType sourceAttachmentType,
-            @RequestParam(name = "deleteOldAttachment", required = false, defaultValue = "false") Boolean deleteOldAttachment,
-            @RequestParam(name = "uploadAllInAttachment", required = false, defaultValue = "false") Boolean uploadAllInAttachment,
-            @RequestParam(name = "uploadAllInPost", required = false, defaultValue = "false") Boolean uploadAllInPost) {
-        return attachmentHandlerCovertService.covertHandlerByPosts(
-                sourceAttachmentType,
-                deleteOldAttachment,
-                uploadAllInAttachment,
-                uploadAllInPost);
     }
 }
